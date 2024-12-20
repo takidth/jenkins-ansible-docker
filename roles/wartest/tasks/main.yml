@@ -23,21 +23,21 @@
   args:
     creates: /home/jenkins/venv/bin/pip3
 
+- name: Install PyYAML with compatible version and avoid wheel issues
+  shell: >
+    /home/jenkins/venv/bin/pip3 install PyYAML==6.0.2 --no-build-isolation --use-deprecated=legacy-resolver
+  args:
+    creates: /home/jenkins/venv/lib/python3.12/site-packages/yaml
+
 - name: Install cython in the virtual environment
   shell: >
     /home/jenkins/venv/bin/pip3 install cython
   args:
     creates: /home/jenkins/venv/bin/cython
 
-- name: Install PyYAML first (precompiled version if available)
-  shell: >
-    /home/jenkins/venv/bin/pip3 install PyYAML==6.0.2
-  args:
-    creates: /home/jenkins/venv/lib/python3.12/site-packages/yaml
-
 - name: Install required Python libraries in the virtual environment
   shell: >
-    /home/jenkins/venv/bin/pip3 install docker docker-compose
+    /home/jenkins/venv/bin/pip3 install docker docker-compose --no-build-isolation --use-deprecated=legacy-resolver
   args:
     creates: /home/jenkins/venv/bin/docker-compose
 
@@ -51,3 +51,4 @@
 
 - name: Debug container status
   shell: docker ps | grep wartest
+
