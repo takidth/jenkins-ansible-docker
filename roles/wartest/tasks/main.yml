@@ -1,43 +1,45 @@
 ---
-- name: Install build-essential for building dependencies
+- name: Install system dependencies for Python and building
   apt:
-    name: build-essential
+    name:
+      - build-essential
+      - python3-venv
+      - python3-dev
+      - libyaml-dev
     state: present
-
-- name: Install python3-venv
-  apt:
-    name: python3-venv
-    state: present
+    update_cache: yes
 
 - name: Create Python virtual environment
   shell: python3 -m venv /home/jenkins/venv
+  args:
+    creates: /home/jenkins/venv
 
-- name: Upgrade pip, setuptools, and wheel
-  pip:
-    virtualenv: /home/jenkins/venv
-    name:
-      - pip
-      - setuptools
-      - wheel
-    extra_args: --upgrade
+- name: Upgrade pip, setuptools, and wheel in the virtual environment
+  shell: >
+    /home/jenkins/venv/bin/pip3 install --upgrade pip setuptools wheel
+  args:
+    creates: /home/jenkins/venv/bin/pip3
 
-- name: Install cython
-  pip:
-    virtualenv: /home/jenkins/venv
-    name: cython
-    state: present
+- name: Install cython in the virtual environment
+  shell: >
+    /home/jenkins/venv/bin/pip3 install cython
+  args:
+    creates: /home/jenkins/venv/bin/cython
 
-- name: Install pip inside virtualenv
-  pip:
-    virtualenv: /home/jenkins/venv
-    name:
-      - docker
-      - docker-compose
+- name: Install required Python libraries in the virtual environment
+  shell: >
+    /home/jenkins/venv/bin/pip3 install docker docker-compose
+  args:
+    creates: /home/jenkins/venv/bin/docker-compose
 
-- name: Run container
+- name: Ensure the wartest container is running
   docker_container:
     name: wartest
     image: "{{ image }}"
     ports:
       - "8081:8080"
     state: started
+
+- name: Debug container status
+  shell: docker ps | grep wartest
+
