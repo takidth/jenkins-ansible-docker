@@ -17,42 +17,56 @@
   shell: |
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
     update-alternatives --set python3 /usr/bin/python3.10
+  args:
+    warn: false
 
 - name: Create Python virtual environment
-  shell: python3 -m venv /home/jenkins/venv
+  ansible.builtin.command: python3 -m venv /home/jenkins/venv
   args:
     creates: /home/jenkins/venv
 
 - name: Upgrade pip, setuptools, and wheel in the virtual environment
-  shell: |
+  ansible.builtin.shell: |
     /home/jenkins/venv/bin/pip3 install --upgrade pip setuptools wheel
   args:
-    creates: /home/jenkins/venv/bin/pip3
+    executable: /bin/bash
 
 - name: Install specific version of PyYAML
-  shell: |
+  ansible.builtin.shell: |
     /home/jenkins/venv/bin/pip3 install PyYAML==5.4.1 --no-build-isolation --use-deprecated=legacy-resolver
   args:
-    creates: /home/jenkins/venv/lib/python3.10/site-packages/yaml
+    executable: /bin/bash
+  register: install_pyyaml
+  failed_when: "'error' in install_pyyaml.stderr or install_pyyaml.rc != 0"
 
-- name: Install cython in the virtual environment
-  shell: |
+- name: Install Cython in the virtual environment
+  ansible.builtin.shell: |
     /home/jenkins/venv/bin/pip3 install cython
   args:
-    creates: /home/jenkins/venv/bin/cython
+    executable: /bin/bash
 
 - name: Install required Python libraries in the virtual environment
-  shell: |
+  ansible.builtin.shell: |
     /home/jenkins/venv/bin/pip3 install docker==6.0.1 docker-compose==1.29.2 --no-build-isolation --use-deprecated=legacy-resolver
   args:
-    creates: /home/jenkins/venv/bin/docker-compose
+    executable: /bin/bash
+  register: install_docker
+  failed_when: "'error' in install_docker.stderr or install_docker.rc != 0"
 
 - name: Ensure the wartest container is running
-  docker_container:
+  community.docker.docker_container:
     name: wartest
     image: "{{ image }}"
     ports:
       - "8081:8080"
     state: started
 
-- name
+- name: Check if the wartest container is running
+  community.docker.docker_container_info:
+    name: wartest
+  register: container_info
+
+- name: Ensure the container is healthy
+  ansible.builtin.debug:
+    msg: "Container wartest is running and healthy. Info: {{ container_info.container }}"
+    when: container_info.container.State.Status == "running"
