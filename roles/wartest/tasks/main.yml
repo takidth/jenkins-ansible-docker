@@ -6,6 +6,9 @@
       - python3-venv
       - python3-dev
       - libyaml-dev
+      - libffi-dev
+      - libssl-dev
+      - gcc
     state: present
     update_cache: yes
 
@@ -26,9 +29,15 @@
   args:
     creates: /home/jenkins/venv/bin/cython
 
+- name: Install PyYAML first (precompiled version if available)
+  shell: >
+    /home/jenkins/venv/bin/pip3 install PyYAML==6.0.2
+  args:
+    creates: /home/jenkins/venv/lib/python3.12/site-packages/yaml
+
 - name: Install required Python libraries in the virtual environment
   shell: >
-    /home/jenkins/venv/bin/pip3 install PyYAML docker docker-compose
+    /home/jenkins/venv/bin/pip3 install docker docker-compose
   args:
     creates: /home/jenkins/venv/bin/docker-compose
 
